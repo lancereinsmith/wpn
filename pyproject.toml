@@ -1,0 +1,32 @@
+[build-system]
+requires = [ "setuptools", "wheel",]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wpn"
+version = "0.1.0"
+description = "A Python library for scraping and retrieving song information from the Muzak WPN (What's Playing Now) website. This tool allows you to get current and historical song data for various music channels/stations."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+ "beautifulsoup4",
+ "click",
+ "grequests",
+ "python-Levenshtein",
+ "requests",
+ "thefuzz",
+]
+keywords = ["music", "song", "scraping", "wpn", "muzak"]
+classifiers = [ "Development Status :: 4 - Beta", "Intended Audience :: Developers", "License :: OSI Approved :: MIT License", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3.11", "Topic :: Software Development :: Build Tools",]
+[[project.authors]]
+name = "Lance Reinsmith"
+email = "info@k2rad.com"
+
+[project.license]
+text = "MIT"
+
+[project.scripts]
+wpn = "wpn:cli"
+
+[tool.uv]
+dev-dependencies = ["pytest"]
