@@ -234,6 +234,100 @@ class TestWPN:
         assert len(all_songs) == 3
         assert all_songs == mock_song_list
 
+    @patch("wpn.WPN.get_all_song_data")
+    def test_identify_channel_by_song_exact_match(
+        self, mock_get_all_song_data, wpn_instance
+    ):
+        """Test that identify_channel_by_song finds exact matches"""
+        mock_get_all_song_data.return_value = {
+            "Songbook": {
+                "url": f"{BASEADDR}wpn/002.html",
+                "song_list": [("What You Don't Do", "Lianne La Havas")],
+            },
+            "Rock Show": {
+                "url": f"{BASEADDR}wpn/015.html",
+                "song_list": [("Sweet Child O' Mine", "Guns N' Roses")],
+            },
+        }
+
+        channel, song_info, confidence = wpn_instance.identify_channel_by_song(
+            "What You Don't Do"
+        )
+        assert channel == "Songbook"
+        assert song_info == ("What You Don't Do", "Lianne La Havas")
+        assert confidence >= 80  # Thefuzz may not return 100 even for exact matches
+
+    @patch("wpn.WPN.get_all_song_data")
+    def test_identify_channel_by_song_fuzzy_match(
+        self, mock_get_all_song_data, wpn_instance
+    ):
+        """Test that identify_channel_by_song finds fuzzy matches"""
+        mock_get_all_song_data.return_value = {
+            "Songbook": {
+                "url": f"{BASEADDR}wpn/002.html",
+                "song_list": [("What You Don't Do", "Lianne La Havas")],
+            },
+            "Rock Show": {
+                "url": f"{BASEADDR}wpn/015.html",
+                "song_list": [("Sweet Child O' Mine", "Guns N' Roses")],
+            },
+        }
+
+        # Test with partial song name
+        channel, song_info, confidence = wpn_instance.identify_channel_by_song(
+            "You Don't Do"
+        )
+        assert channel == "Songbook"
+        assert song_info == ("What You Don't Do", "Lianne La Havas")
+        assert confidence > 0
+
+        # Test with artist name
+        channel, song_info, confidence = wpn_instance.identify_channel_by_song(
+            "Lianne La Havas"
+        )
+        assert channel == "Songbook"
+        assert song_info == ("What You Don't Do", "Lianne La Havas")
+        assert confidence > 0
+
+    @patch("wpn.WPN.get_all_song_data")
+    def test_identify_channel_by_song_no_match(
+        self, mock_get_all_song_data, wpn_instance
+    ):
+        """Test that identify_channel_by_song handles poor matches"""
+        mock_get_all_song_data.return_value = {
+            "Songbook": {
+                "url": f"{BASEADDR}wpn/002.html",
+                "song_list": [("What You Don't Do", "Lianne La Havas")],
+            }
+        }
+
+        channel, song_info, confidence = wpn_instance.identify_channel_by_song(
+            "Nonexistent Song"
+        )
+        # Thefuzz will still return a match, but with low confidence
+        assert channel == "Songbook"
+        assert song_info == ("What You Don't Do", "Lianne La Havas")
+        assert confidence < 50  # Low confidence for a poor match
+
+    @patch("wpn.WPN.get_all_song_data")
+    def test_identify_channel_by_song_empty_data(
+        self, mock_get_all_song_data, wpn_instance
+    ):
+        """Test that identify_channel_by_song handles empty song data"""
+        mock_get_all_song_data.return_value = {
+            "Songbook": {
+                "url": f"{BASEADDR}wpn/002.html",
+                "song_list": [],
+            }
+        }
+
+        channel, song_info, confidence = wpn_instance.identify_channel_by_song(
+            "Any Song"
+        )
+        assert channel is None
+        assert song_info is None
+        assert confidence == 0.0
+
     @patch("wpn.os.makedirs")
     @patch("wpn.json.dump")
     @patch("wpn.WPN.get_all_song_data")
