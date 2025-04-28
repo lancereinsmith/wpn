@@ -247,6 +247,43 @@ class WPN:
         song_data = self.get_all_song_data()
         return song_data[channel_name]["song_list"]
 
+    def identify_channel_by_song(
+        self, song_input: str
+    ) -> tuple[str, tuple[str, str], float]:
+        """Identify which channel is playing a given song using fuzzy matching.
+
+        Args:
+            song_input (str): The song name or partial song name to search for.
+
+        Returns:
+            tuple[str, tuple[str, str], float]: A tuple containing:
+                - The channel name
+                - The matched song tuple (song, artist)
+                - The confidence score (0-100)
+        """
+        # Get all current songs across all channels
+        song_data = self.get_all_song_data()
+
+        # Create a list of all current songs with their channel names
+        current_songs = []
+        for channel, data in song_data.items():
+            if "song_list" in data and len(data["song_list"]) > 0:
+                current_song = data["song_list"][0]  # Get current song
+                current_songs.append((channel, current_song))
+
+        # Create a list of song strings for matching
+        song_strings = [f"{song[0]} by {song[1]}" for _, song in current_songs]
+
+        # Find the best match
+        best_match = process.extractOne(song_input, song_strings)
+
+        if best_match:
+            match_index = song_strings.index(best_match[0])
+            channel, song_tuple = current_songs[match_index]
+            return channel, song_tuple, best_match[1]
+
+        return None, None, 0.0
+
 
 @click.group()
 def cli():
@@ -362,6 +399,29 @@ def previous_songs(channel):
         songs_to_display = list(reversed(songs))
         for i, (song, artist) in enumerate(songs_to_display, 1):
             click.echo(f"{i}. {song} by {artist}")
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+
+
+@cli.command("identify", help="Identify which channel is playing a given song.")
+@click.argument("song", nargs=-1, type=str)
+def identify_channel(song):
+    """Identify which channel is playing a given song given the song name and/or artist name.
+
+    SONG can be the exact song name or a partial name that will be matched.
+    Multiple words are allowed.
+    """
+    wpn = WPN()
+    try:
+        # Join all parts of the song argument into a single string
+        song_query = " ".join(song)
+        channel, song_info, confidence = wpn.identify_channel_by_song(song_query)
+        if channel and song_info:
+            click.echo(f"Channel: {channel}")
+            click.echo(f"Song: {song_info[0]} by {song_info[1]}")
+            click.echo(f"Confidence: {confidence:.1f}%")
+        else:
+            click.echo("No matching song found across all channels.")
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)
 
