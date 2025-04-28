@@ -11,6 +11,7 @@ A Python library for scraping and retrieving song information from the Muzak WPN
 - Fetch and process all song data for all available channels
 - Export song data to JSON format
 - Command-line interface for all functionality
+- Identify which channel is playing a given song using fuzzy matching
 
 ## Installation
 
@@ -19,23 +20,51 @@ A Python library for scraping and retrieving song information from the Muzak WPN
 - Python 3.12 or higher
 - Dependencies are specified in `pyproject.toml`
 
-### Installation steps
+### Installation Options
+
+#### 1. Install as a Python Package
+
+Using `uv` (recommended):
+```bash
+uv pip install wpn
+```
+
+Or using `pip`:
+```bash
+pip install wpn
+```
+
+#### 2. Install as a Standalone Executable
+
+Using `uv` (recommended):
+```bash
+uv tool install wpn
+```
+
+Or using `pipx`:
+```bash
+pipx install wpn
+```
+
+#### 3. Install from Source (Development)
+
+If you want to contribute to the project or need the latest development version:
 
 1. Clone this repository:
-   ```
+   ```bash
    git clone https://github.com/lancereinsmith/wpn.git
    cd wpn
    ```
 
 2. Install using `uv` (recommended):
-   ```
+   ```bash
    pip install uv
    uv venv
    uv pip install -e .
    ```
 
 3. Alternatively, you can use a standard venv:
-   ```
+   ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows, use `.venv\Scripts\activate`
    pip install -e .
@@ -147,6 +176,21 @@ wpn all-data
 wpn all-data --output data.json
 ```
 
+#### Identify which channel is playing a song
+
+```
+wpn identify "Song Name"
+# Or with artist name
+wpn identify "Song Name by Artist Name"
+# Or without quotes
+wpn identify Song Name by Artist Name
+```
+
+This will search across all channels for the given song and return:
+- The channel name where the song is playing
+- The full song information (song name and artist)
+- A confidence score indicating how well the match was found
+
 ## API Reference
 
 ### WPN Class
@@ -179,6 +223,14 @@ The `channel_input` can be either a string (channel name) or an integer (channel
 
 #### `get_all_song_data()`
 Generate the song data for all songs currently playing on all channels.
+
+#### `identify_channel_by_song(song_input)`
+Identify which channel is playing a given song using fuzzy matching. Returns a tuple containing:
+- The channel name
+- The matched song tuple (song, artist)
+- The confidence score (0-100)
+
+The `song_input` can be a partial song name or include artist information. The matching is done using fuzzy string matching, so it will work even with slight differences in the text.
 
 ## Project Structure
 
