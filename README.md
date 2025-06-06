@@ -191,73 +191,29 @@ This will search across all channels for the given song and return:
 - The full song information (song name and artist)
 - A confidence score indicating how well the match was found
 
+#### Interactive Terminal User Interface (TUI)
+
+WPN includes a modern, interactive terminal interface that provides a visual way to browse and filter all channels and their songs.
+
+```
+wpn tui
+```
+
+The TUI features:
+- Real-time display of all channels and their current songs
+- Color-coded channel cards for easy visual distinction
+- Live filtering by channel name, song title, or artist
+- Keyboard shortcuts:
+  - `q` to quit
+  - `r` to refresh data
+  - `f` to focus the filter input
+- Scrollable interface for browsing many channels
+- Previous songs list for each channel
+
+The interface updates automatically when you type in the filter box, making it easy to find specific channels or songs. Each channel is displayed in its own card with a unique color, showing both the current song and a list of previously played songs.
+
 ## API Reference
 
 ### WPN Class
 
-#### `__init__()`
-Initialize the WPN scraper with an up-to-date directory of channels.
-
-#### `get_directory(sort=True)`
-Create an up-to-date directory of channels and URLs from the WPN website.
-
-#### `get_channel_name(channel_input)`
-Filter input to match a valid channel name or accept an integer to get a channel by index.
-
-#### `get_current_song(channel_input)`
-Get the current song playing on a specified channel, returned as a tuple of (song, artist).
-The `channel_input` can be either a string (channel name) or an integer (channel index).
-
-#### `get_previous_songs(channel_input)`
-Get a list of previous songs played on a channel as a list of (song, artist) tuples, ordered from oldest to most recent.
-The `channel_input` can be either a string (channel name) or an integer (channel index).
-
-#### `get_all_songs(channel_input)`
-Get a list of current and previous songs for a channel as a list of (song, artist) tuples. The list is structured so that:
-- Index 0 contains the current song
-- Negative indices can be used to access previous songs chronologically
-- songs[-1] is the most recently played previous song
-- songs[-2] is the second most recently played previous song, and so on
-
-The `channel_input` can be either a string (channel name) or an integer (channel index).
-
-#### `get_all_song_data()`
-Generate the song data for all songs currently playing on all channels.
-
-#### `identify_channel_by_song(song_input)`
-Identify which channel is playing a given song using fuzzy matching. Returns a tuple containing:
-- The channel name
-- The matched song tuple (song, artist)
-- The confidence score (0-100)
-
-The `song_input` can be a partial song name or include artist information. The matching is done using fuzzy string matching, so it will work even with slight differences in the text.
-
-## Project Structure
-
-```wpn/
-├── src/
-│   └── wpn/
-│       ├── __init__.py
-│       └── wpn.py
-├── tests/
-│   └── test_wpn.py
-├── pyproject.toml
-└── README.md
-```
-
-## Testing
-
-Run tests using pytest:
-
-```
-python -m pytest
-```
-
-## License
-
-MIT License
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
+#### `
