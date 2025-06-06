@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wpn"
-version = "0.1.2"
+version = "0.1.3"
 description = "A Python library for scraping and retrieving song information from the Muzak WPN (What's Playing Now) website. This tool allows you to get current and historical song data for various music channels/stations."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -15,6 +15,7 @@ dependencies = [
  "python-Levenshtein",
  "requests",
  "thefuzz",
+ "textual",
 ]
 keywords = ["music", "song", "scraping", "wpn", "muzak"]
 classifiers = [

@@ -426,5 +426,13 @@ def identify_channel(song):
         click.echo(f"Error: {str(e)}", err=True)
 
 
+@cli.command("tui", help="Launch the interactive Textual TUI application.")
+def launch_tui():
+    """Launch the interactive Textual TUI application."""
+    from wpn.tui import main
+
+    main()
+
+
 if __name__ == "__main__":
     cli()
