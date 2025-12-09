@@ -25,11 +25,13 @@ A Python library for scraping and retrieving song information from the Muzak WPN
 #### 1. Install as a Python Package
 
 Using `uv` (recommended):
+
 ```bash
 uv pip install wpn
 ```
 
 Or using `pip`:
+
 ```bash
 pip install wpn
 ```
@@ -37,11 +39,13 @@ pip install wpn
 #### 2. Install as a Standalone Executable
 
 Using `uv` (recommended):
+
 ```bash
 uv tool install wpn
 ```
 
 Or using `pipx`:
+
 ```bash
 pipx install wpn
 ```
@@ -51,12 +55,14 @@ pipx install wpn
 If you want to contribute to the project or need the latest development version:
 
 1. Clone this repository:
+
    ```bash
    git clone https://github.com/lancereinsmith/wpn.git
    cd wpn
    ```
 
 2. Install using `uv` (recommended):
+
    ```bash
    pip install uv
    uv venv
@@ -64,6 +70,7 @@ If you want to contribute to the project or need the latest development version:
    ```
 
 3. Alternatively, you can use a standard venv:
+
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows, use `.venv\Scripts\activate`
@@ -104,7 +111,7 @@ print(f"Now playing: {current_song} by {current_artist}")
 if len(songs) > 1:
     prev_song, prev_artist = songs[-1]
     print(f"Previously played: {prev_song} by {prev_artist}")
-    
+
     # Second most recent previous song
     if len(songs) > 2:
         older_song, older_artist = songs[-2]
@@ -132,19 +139,19 @@ WPN provides a comprehensive command-line interface for accessing all functional
 
 After installing the package, the `wpn` command will be available:
 
-```
+```text
 wpn --help
 ```
 
 #### List all available channels
 
-```
+```text
 wpn list
 ```
 
 #### Get the current song playing on a channel
 
-```
+```text
 wpn current "Channel Name"
 # Or using channel index
 wpn current 5
@@ -152,7 +159,7 @@ wpn current 5
 
 #### Get previous songs played on a channel
 
-```
+```text
 wpn previous "Channel Name"
 # Or using channel index
 wpn previous 5
@@ -162,7 +169,7 @@ This will display a list of previously played songs from most recent to least re
 
 #### Get all songs (current and previous) for a channel
 
-```
+```text
 wpn songs "Channel Name"
 # Or using channel index
 wpn songs 5
@@ -170,7 +177,7 @@ wpn songs 5
 
 #### Get all song data for all channels
 
-```
+```text
 wpn all-data
 # Or specify custom output path
 wpn all-data --output data.json
@@ -178,7 +185,7 @@ wpn all-data --output data.json
 
 #### Identify which channel is playing a song
 
-```
+```text
 wpn identify "Song Name"
 # Or with artist name
 wpn identify "Song Name by Artist Name"
@@ -187,6 +194,7 @@ wpn identify Song Name by Artist Name
 ```
 
 This will search across all channels for the given song and return:
+
 - The channel name where the song is playing
 - The full song information (song name and artist)
 - A confidence score indicating how well the match was found
@@ -196,24 +204,31 @@ This will search across all channels for the given song and return:
 ### WPN Class
 
 #### `__init__()`
+
 Initialize the WPN scraper with an up-to-date directory of channels.
 
 #### `get_directory(sort=True)`
+
 Create an up-to-date directory of channels and URLs from the WPN website.
 
 #### `get_channel_name(channel_input)`
+
 Filter input to match a valid channel name or accept an integer to get a channel by index.
 
 #### `get_current_song(channel_input)`
+
 Get the current song playing on a specified channel, returned as a tuple of (song, artist).
 The `channel_input` can be either a string (channel name) or an integer (channel index).
 
 #### `get_previous_songs(channel_input)`
+
 Get a list of previous songs played on a channel as a list of (song, artist) tuples, ordered from oldest to most recent.
 The `channel_input` can be either a string (channel name) or an integer (channel index).
 
 #### `get_all_songs(channel_input)`
+
 Get a list of current and previous songs for a channel as a list of (song, artist) tuples. The list is structured so that:
+
 - Index 0 contains the current song
 - Negative indices can be used to access previous songs chronologically
 - songs[-1] is the most recently played previous song
@@ -222,10 +237,13 @@ Get a list of current and previous songs for a channel as a list of (song, artis
 The `channel_input` can be either a string (channel name) or an integer (channel index).
 
 #### `get_all_song_data()`
+
 Generate the song data for all songs currently playing on all channels.
 
 #### `identify_channel_by_song(song_input)`
+
 Identify which channel is playing a given song using fuzzy matching. Returns a tuple containing:
+
 - The channel name
 - The matched song tuple (song, artist)
 - The confidence score (0-100)
@@ -234,11 +252,11 @@ The `song_input` can be a partial song name or include artist information. The m
 
 ## Project Structure
 
-```wpn/
+```text
+wpn/
 ├── src/
 │   └── wpn/
-│       ├── __init__.py
-│       └── wpn.py
+│       └── __init__.py
 ├── tests/
 │   └── test_wpn.py
 ├── pyproject.toml
@@ -249,7 +267,7 @@ The `song_input` can be a partial song name or include artist information. The m
 
 Run tests using pytest:
 
-```
+```text
 python -m pytest
 ```
 
@@ -260,4 +278,3 @@ MIT License
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-

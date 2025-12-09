@@ -1,21 +1,20 @@
 [build-system]
-requires = [ "setuptools", "wheel",]
+requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "wpn"
-version = "0.1.3"
+version = "0.2.0"
 description = "A Python library for scraping and retrieving song information from the Muzak WPN (What's Playing Now) website. This tool allows you to get current and historical song data for various music channels/stations."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
- "beautifulsoup4",
- "click",
- "grequests",
- "python-Levenshtein",
- "requests",
- "thefuzz",
- "textual",
+    "beautifulsoup4>=4.12.0",
+    "click>=8.1.0",
+    "grequests>=0.6.0",
+    "python-Levenshtein>=0.21.0",
+    "requests>=2.31.0",
+    "thefuzz>=0.19.0",
 ]
 keywords = ["music", "song", "scraping", "wpn", "muzak"]
 classifiers = [
@@ -23,23 +22,19 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Multimedia :: Sound/Audio",
     "Operating System :: OS Independent",
 ]
-[[project.authors]]
-name = "Lance Reinsmith"
-email = "info@k2rad.com"
-
-[[project.maintainers]]
-name = "Lance Reinsmith"
-email = "info@k2rad.com"
-
-[project.license]
-text = "MIT"
+authors = [
+    {name = "Lance Reinsmith", email = "info@k2rad.com"}
+]
+maintainers = [
+    {name = "Lance Reinsmith", email = "info@k2rad.com"}
+]
+license = {text = "MIT"}
 
 [project.urls]
 Homepage = "https://github.com/lancereinsmith/wpn"
@@ -50,5 +45,5 @@ Issues = "https://github.com/lancereinsmith/wpn/issues"
 [project.scripts]
 wpn = "wpn:cli"
 
-[tool.uv]
-dev-dependencies = ["pytest"]
+[dependency-groups]
+dev = ["pytest>=7.4.0"]
