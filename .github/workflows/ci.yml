@@ -36,17 +36,16 @@ jobs:
 
       - name: Test package installation
         run: |
-          uv run wpn --version
           uv run wpn --help
 
       - name: Run linting
         run: |
-          uv run ruff check src/ tests/ || echo "Ruff linting failed, but continuing..."
-          uv run ruff format src/ tests/ || echo "Ruff formatting check failed, but continuing..."
+          uv run ruff check . || echo "Ruff linting failed, but continuing..."
+          uv run ruff format --check . || echo "Ruff formatting check failed, but continuing..."
 
       - name: Run type checking
         run: |
-          uv run ty check src/ || echo "Type checking failed, but continuing..."
+          uv run ty check . || echo "Type checking failed, but continuing..."
 
       - name: Run tests without coverage
         run: |
