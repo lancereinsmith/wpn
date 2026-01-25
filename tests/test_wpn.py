@@ -343,7 +343,7 @@ class TestWPN:
         # Run the actual main code, not just part of it
         with patch("builtins.open", create=True), patch("builtins.print"):
             w = WPN()
-            data = w.get_all_song_data()
+            w.get_all_song_data()
 
             # Actually call the makedirs function
             os.makedirs("output", exist_ok=True)

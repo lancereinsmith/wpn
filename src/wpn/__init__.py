@@ -41,12 +41,12 @@ __version__ = version("wpn")  # Uses installed package metadata
 import json
 import os
 import re
-from typing import Union
+from typing import cast
 
 import click
 import grequests
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from thefuzz import process
 
 BASEADDR = "http://muzakwpn.muzak.com/"
@@ -70,7 +70,7 @@ class WPN:
         """
         return BeautifulSoup(html, "html.parser")
 
-    def _get_directory(self, sort: bool = True) -> dict[str, dict[str, str]]:
+    def _get_directory(self, sort: bool = True) -> dict[str, str]:
         """Create an up-to-date directory of channels and urls from the WPN website.
 
         Args:
@@ -85,7 +85,8 @@ class WPN:
         wpnaddr = re.compile(r"wpn/...\.html")
         self.directory = {
             crumblink.text: os.path.join(
-                BASEADDR, wpnaddr.findall(crumblink["onclick"])[0]
+                BASEADDR,
+                wpnaddr.findall(str(cast(Tag, crumblink).get("onclick", "")))[0],
             )
             for crumblink in crumblinks[1:]
         }
@@ -95,20 +96,16 @@ class WPN:
             )
         return self.directory
 
-    def _split_song(self, song: str) -> tuple[str, str]:
-        """Given an artist and song as a string, convert it into a tuple.
+    def _split_song(self, song: str | Tag) -> tuple[str, str]:
+        """Given an artist and song as a string or Tag, convert it into a tuple.
 
         Args:
-            song (str): A string containing song and artist information.
+            song (str | Tag): A string or BeautifulSoup Tag containing song and artist.
 
         Returns:
             tuple[str, str]: A tuple containing (song, artist).
         """
-        # Check if song is a Tag object from BeautifulSoup
-        if hasattr(song, "text"):
-            text = song.text.strip()
-        else:
-            text = str(song).strip()
+        text = str(song.text).strip() if hasattr(song, "text") else str(song).strip()
 
         # Split by ", by " to separate song and artist
         parts = text.split(", by ", 1)
@@ -131,22 +128,32 @@ class WPN:
         """
         soup = self._get_soup(html)
         all_channel_data = soup.find(id="titles")
-        # get the channel name
-        channel_name = all_channel_data.find("p").find("b").text.replace("Now on ", "")
+        if all_channel_data is None or not isinstance(all_channel_data, Tag):
+            raise ValueError("Channel titles element not found")
+        p_elem = all_channel_data.find("p")
+        if p_elem is None:
+            raise ValueError("Channel <p> element not found")
+        b_elem = cast(Tag, p_elem).find("b")
+        if b_elem is None:
+            raise ValueError("Channel <b> element not found")
+        channel_name = cast(Tag, b_elem).text.replace("Now on ", "")
         # get first song (current song)
-        current_song = self._split_song(list(all_channel_data.children)[0].contents[-1])
+        first_child = cast(Tag, list(all_channel_data.children)[0])
+        current_song = self._split_song(cast(Tag, first_child.contents[-1]))
         # list for previous songs that will be reversed
         previous_songs = []
 
         # try to add additional songs
         try:
             # add second song to previous_songs
-            previous_songs.append(self._split_song(list(all_channel_data.children)[2]))
+            second_child = cast(Tag, list(all_channel_data.children)[2])
+            previous_songs.append(self._split_song(second_child))
             # add songs 3-10 to previous_songs
+            third_child = cast(Tag, list(all_channel_data.children)[3])
             previous_songs.extend(
-                self._split_song(song)
-                for song in list(all_channel_data.children)[3]
-                if len(song.text) > 1
+                self._split_song(cast(Tag, song))
+                for song in third_child
+                if len(getattr(song, "text", str(song))) > 1
             )
             # reverse previous_songs so that most recent is last (for negative indexing)
             previous_songs.reverse()
@@ -170,7 +177,7 @@ class WPN:
         web_data = grequests.map(reqs)
         return web_data
 
-    def get_channel_name(self, channel_input: Union[int, str]) -> str:
+    def get_channel_name(self, channel_input: int | str) -> str:
         """Filter input to match a valid channel name.  Or, accept an integer to get a
         channel by index.
 
@@ -180,12 +187,11 @@ class WPN:
         Returns:
             str: A valid channel name from the WPN website.
         """
+        if isinstance(channel_input, int):
+            return self.channel_list[channel_input]
         if channel_input in self.channel_list:
             return channel_input
-        elif isinstance(channel_input, int):
-            return self.channel_list[channel_input]
-        else:
-            return process.extractOne(channel_input, self.channel_list)[0]
+        return process.extractOne(channel_input, self.channel_list)[0]
 
     def get_all_song_data(self) -> dict:
         """Generate the song data for all songs currently playing.
@@ -203,7 +209,7 @@ class WPN:
             self.song_data[channel_name].update({"song_list": song_list})
         return self.song_data
 
-    def get_current_song(self, channel_input: Union[str, int]) -> tuple[str, str]:
+    def get_current_song(self, channel_input: str | int) -> tuple[str, str]:
         """Given a channel name or index, get the current song and artist.
 
         Args:
@@ -217,7 +223,7 @@ class WPN:
         return song_data[channel_name]["song_list"][0]
 
     def get_previous_songs(
-        self, channel_input: Union[str, int]
+        self, channel_input: str | int
     ) -> list[tuple[str, str]]:
         """Given a channel name or index, get the previous songs and artists.
 
@@ -233,7 +239,7 @@ class WPN:
         # Return all songs except the current one (index 0), in the order they appear
         return song_data[channel_name]["song_list"][1:]
 
-    def get_all_songs(self, channel_input: Union[str, int]) -> list[tuple[str, str]]:
+    def get_all_songs(self, channel_input: str | int) -> list[tuple[str, str]]:
         """Given a channel name or index, get current and previous songs and artists.
 
         Args:
@@ -249,7 +255,7 @@ class WPN:
 
     def identify_channel_by_song(
         self, song_input: str
-    ) -> tuple[str, tuple[str, str], float]:
+    ) -> tuple[str | None, tuple[str, str] | None, float]:
         """Identify which channel is playing a given song using fuzzy matching.
 
         Args:

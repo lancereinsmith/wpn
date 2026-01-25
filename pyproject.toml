@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "wpn"
-version = "0.2.0"
+version = "0.2.1"
 description = "A Python library for scraping and retrieving song information from the Muzak WPN (What's Playing Now) website. This tool allows you to get current and historical song data for various music channels/stations."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -16,6 +16,7 @@ dependencies = [
     "requests>=2.31.0",
     "thefuzz>=0.19.0",
 ]
+
 keywords = ["music", "song", "scraping", "wpn", "muzak"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -46,4 +47,49 @@ Issues = "https://github.com/lancereinsmith/wpn/issues"
 wpn = "wpn:cli"
 
 [dependency-groups]
-dev = ["pytest>=7.4.0"]
+dev = ["pytest>=7.4.0", "ruff>=0.8.0", "ty>=0.0.12", "rumdl>=0.0.220"]
+
+# ——— Ruff: lint and format (replaces black, isort, flake8) ———
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ——— ty: type checking (replaces mypy, pyright) ———
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.ty.src]
+exclude = ["tests"]
+
+# ——— rumdl: markdown format (mkdocs flavor) ———
+# Global options live under [tool.rumdl]; [tool.rumdl.global] is for .rumdl.toml only.
+[tool.rumdl]
+flavor = "mkdocs"
+respect-gitignore = true
+disable = ["MD007", "MD013", "MD031", "MD033", "MD046"]
+exclude = [
+    ".git",
+    ".github",
+    "node_modules",
+    "vendor",
+    "dist",
+    "build",
+    "CHANGELOG.md",
+    "LICENSE.md",
+]
+
+# ——— Pytest (optional: remove [tool.pytest.ini_options] and the test group if you have no tests) ———
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-v", "--tb=short", "--strict-markers", "--strict-config"]
