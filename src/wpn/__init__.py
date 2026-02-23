@@ -81,15 +81,14 @@ class WPN:
         """
         html = requests.get(BASEADDR).text
         soup = self._get_soup(html)
-        crumblinks = soup.find_all(class_="crumblink")
-        wpnaddr = re.compile(r"wpn/...\.html")
-        self.directory = {
-            crumblink.text: os.path.join(
-                BASEADDR,
-                wpnaddr.findall(str(cast(Tag, crumblink).get("onclick", "")))[0],
-            )
-            for crumblink in crumblinks[1:]
-        }
+        art_modal_re = re.compile(r"openArtModal\('(\d+)'\)")
+        self.directory = {}
+        for a in soup.find_all("a"):
+            onclick = str(cast(Tag, a).get("onclick", ""))
+            match = art_modal_re.search(onclick)
+            if match:
+                channel_id = match.group(1)
+                self.directory[a.text] = os.path.join(BASEADDR, f"wpn/{channel_id}.html")
         if sort:
             self.directory = dict(
                 sorted(self.directory.items(), key=lambda item: item[0])

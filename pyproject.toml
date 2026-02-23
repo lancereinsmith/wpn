@@ -4,17 +4,17 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wpn"
-version = "0.2.1"
+version = "0.3.0"
 description = "A Python library for scraping and retrieving song information from the Muzak WPN (What's Playing Now) website. This tool allows you to get current and historical song data for various music channels/stations."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "beautifulsoup4>=4.12.0",
-    "click>=8.1.0",
-    "grequests>=0.6.0",
-    "python-Levenshtein>=0.21.0",
-    "requests>=2.31.0",
-    "thefuzz>=0.19.0",
+    "beautifulsoup4>=4.14.3",
+    "click>=8.3.1",
+    "grequests>=0.7.0",
+    "python-Levenshtein>=0.27.3",
+    "requests>=2.32.5",
+    "thefuzz>=0.22.1",
 ]
 
 keywords = ["music", "song", "scraping", "wpn", "muzak"]
