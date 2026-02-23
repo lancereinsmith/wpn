@@ -38,9 +38,9 @@ class TestWPN:
         # Create a mock HTML with some channel links
         mock_html = """
         <html><body>
-        <a class="crumblink">Not a channel</a>
-        <a class="crumblink" onclick="showPlayer('wpn/002.html')">Songbook</a>
-        <a class="crumblink" onclick="showPlayer('wpn/015.html')">Rock Show</a>
+        <a>Not a channel</a>
+        <a onclick="openArtModal('002')">Songbook</a>
+        <a onclick="openArtModal('015')">Rock Show</a>
         </body></html>
         """
         mock_response = MagicMock()
