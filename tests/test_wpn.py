@@ -186,6 +186,42 @@ class TestWPN:
                 "Lianne La Havas",
             )
 
+    @patch("wpn.WPN._get_all_channels")
+    def test_get_all_song_data_skips_failures(
+        self, mock_get_all_channels, wpn_instance, caplog
+    ):
+        """A failed request (None) or an unparseable page should be skipped and
+        logged, without aborting the whole batch."""
+        good_response = MagicMock()
+        good_response.text = "good html"
+        bad_response = MagicMock()
+        bad_response.text = "bad html"
+
+        # urls order matches the fixture directory: Songbook, Rock Show, Jazz Traditions
+        mock_get_all_channels.return_value = [good_response, None, bad_response]
+
+        def fake_parse(html):
+            if html == "good html":
+                return ("Songbook", [("What You Don't Do", "Lianne La Havas")])
+            raise ValueError("Channel titles element not found")
+
+        with (
+            patch("wpn.WPN._get_song_list_from_html", side_effect=fake_parse),
+            caplog.at_level("WARNING"),
+        ):
+            song_data = wpn_instance.get_all_song_data()
+
+        # The good channel was populated...
+        assert song_data["Songbook"]["song_list"][0] == (
+            "What You Don't Do",
+            "Lianne La Havas",
+        )
+        # ...while the failed/unparseable channels were skipped, not crashed.
+        assert "song_list" not in song_data["Rock Show"]
+        assert "song_list" not in song_data["Jazz Traditions"]
+        # Both failures were logged.
+        assert len(caplog.records) == 2
+
     @patch("wpn.WPN.get_all_song_data")
     def test_get_current_song(self, mock_get_all_song_data, wpn_instance):
         """Test that get_current_song returns the current song"""

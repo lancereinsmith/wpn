@@ -1,6 +1,8 @@
 # WPN - What's Playing Now
 
-A Python library for scraping and retrieving song information from the Muzak WPN (What's Playing Now) website. This tool allows you to get current and historical song data for various music channels/stations.
+A Python library for scraping and retrieving song information from the WPN (What's Playing Now) website operated by Mood Media (formerly Muzak). This tool allows you to get current and historical song data for various music channels/stations.
+
+> **Note:** Muzak has rebranded to Mood Media. The WPN site (`muzakwpn.muzak.com`) now serves only over HTTPS and resolves to `moodwpn.moodmedia.com`. This library uses the HTTPS endpoint.
 
 ## Features
 
