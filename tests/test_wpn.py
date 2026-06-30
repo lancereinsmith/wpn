@@ -24,6 +24,14 @@ def wpn_instance():
         return wpn
 
 
+def test_baseaddr_uses_https():
+    """The WPN/Mood Media site only serves over HTTPS; http:// returns a 522.
+
+    Regression test: BASEADDR must use the https scheme so requests succeed.
+    """
+    assert BASEADDR.startswith("https://")
+
+
 class TestWPN:
     def test_get_soup(self, wpn_instance):
         """Test that _get_soup returns a BeautifulSoup object"""

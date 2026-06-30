@@ -49,7 +49,7 @@ import requests
 from bs4 import BeautifulSoup, Tag
 from thefuzz import process
 
-BASEADDR = "http://muzakwpn.muzak.com/"
+BASEADDR = "https://muzakwpn.muzak.com/"
 
 
 class WPN:
