@@ -39,6 +39,7 @@ from importlib.metadata import version
 __version__ = version("wpn")  # Uses installed package metadata
 
 import json
+import logging
 import os
 import re
 from typing import cast
@@ -49,7 +50,9 @@ import requests
 from bs4 import BeautifulSoup, Tag
 from thefuzz import process
 
-BASEADDR = "http://muzakwpn.muzak.com/"
+BASEADDR = "https://muzakwpn.muzak.com/"
+
+logger = logging.getLogger(__name__)
 
 
 class WPN:
@@ -201,11 +204,19 @@ class WPN:
         # get the webdata
         web_data = self._get_all_channels(self.urls)
         # cycle through the responses, extract the channel name and song list,
-        # and add to the song_data
-        for channel in web_data:
-            channel_name, song_list = self._get_song_list_from_html(channel.text)
-            channel_name = self.get_channel_name(channel_name)
-            self.song_data[channel_name].update({"song_list": song_list})
+        # and add to the song_data. A single failed request or unparseable page
+        # should not abort the whole batch, so skip and log any failures.
+        for url, channel in zip(self.urls, web_data, strict=False):
+            if channel is None:
+                logger.warning("Request failed for %s; skipping channel", url)
+                continue
+            try:
+                channel_name, song_list = self._get_song_list_from_html(channel.text)
+                channel_name = self.get_channel_name(channel_name)
+                self.song_data[channel_name].update({"song_list": song_list})
+            except (ValueError, IndexError, AttributeError) as exc:
+                logger.warning("Could not parse song data from %s: %s", url, exc)
+                continue
         return self.song_data
 
     def get_current_song(self, channel_input: str | int) -> tuple[str, str]:
