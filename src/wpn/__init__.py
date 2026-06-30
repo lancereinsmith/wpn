@@ -47,12 +47,23 @@ from typing import cast
 import click
 import grequests
 import requests
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
 from thefuzz import process
 
 BASEADDR = "https://muzakwpn.muzak.com/"
 
 logger = logging.getLogger(__name__)
+
+console = Console()
+err_console = Console(stderr=True)
+
+
+def _print_error(message: str) -> None:
+    """Print a styled error message to stderr."""
+    err_console.print(f"[bold red]Error:[/bold red] {message}")
 
 
 class WPN:
@@ -139,31 +150,22 @@ class WPN:
         if b_elem is None:
             raise ValueError("Channel <b> element not found")
         channel_name = cast(Tag, b_elem).text.replace("Now on ", "")
-        # get first song (current song)
-        first_child = cast(Tag, list(all_channel_data.children)[0])
-        current_song = self._split_song(cast(Tag, first_child.contents[-1]))
-        # list for previous songs that will be reversed
-        previous_songs = []
+        # The current song is the trailing text node of the <p> element,
+        # e.g. "<p><b>Now on X</b><br/>Song, by Artist</p>".
+        current_song = self._split_song(cast(Tag, cast(Tag, p_elem).contents[-1]))
 
-        # try to add additional songs
-        try:
-            # add second song to previous_songs
-            second_child = cast(Tag, list(all_channel_data.children)[2])
-            previous_songs.append(self._split_song(second_child))
-            # add songs 3-10 to previous_songs
-            third_child = cast(Tag, list(all_channel_data.children)[3])
-            previous_songs.extend(
-                self._split_song(cast(Tag, song))
-                for song in third_child
-                if len(getattr(song, "text", str(song))) > 1
-            )
-            # reverse previous_songs so that most recent is last (for negative indexing)
-            previous_songs.reverse()
-            # combine current song with reversed previous songs
-            song_list = [current_song] + previous_songs
-            return channel_name, song_list
-        except IndexError:
-            return channel_name, [current_song]
+        # The previous songs ("the last ten songs") are a flat sequence of text
+        # nodes directly under #titles, each "Song, by Artist", separated by
+        # <br/> and <img> tags. Collect every text node that looks like a song.
+        previous_songs = [
+            self._split_song(child)
+            for child in all_channel_data.children
+            if isinstance(child, NavigableString) and ", by " in child
+        ]
+        # The page lists previous songs most-recent-first; reverse so the most
+        # recent is last (for negative indexing, songs[-1] == most recent).
+        previous_songs.reverse()
+        return channel_name, [current_song] + previous_songs
 
     def _get_all_channels(self, urls: list[str]) -> list[requests.models.Response]:
         """Given a list of URLs, perform simultaneous GET requests on those and return
@@ -329,9 +331,12 @@ def all_data(output):
         with open(output, "w", encoding="UTF-8") as f:
             json.dump(data, f, indent=2)
 
-        click.echo(f"Data saved to {output} with {len(data)} channels")
+        console.print(
+            f"[green]Data saved to[/green] {output} "
+            f"[green]with[/green] {len(data)} [green]channels[/green]"
+        )
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        _print_error(str(e))
 
 
 @cli.command("list", help="List all available music channels.")
@@ -339,9 +344,12 @@ def list_channels():
     """List all available music channels."""
     wpn = WPN()
     channels = wpn.channel_list
-    click.echo(f"Available channels ({len(channels)}):")
+    table = Table(title=f"Available channels ({len(channels)})")
+    table.add_column("Index", justify="right", style="dim")
+    table.add_column("Channel", style="cyan")
     for i, channel in enumerate(channels):
-        click.echo(f"{i}: {channel}")
+        table.add_row(str(i), channel)
+    console.print(table)
 
 
 @cli.command("songs", help="Get all songs (current and previous) for a channel.")
@@ -360,15 +368,18 @@ def all_songs(channel):
 
         channel_name = wpn.get_channel_name(channel)
         songs = wpn.get_all_songs(channel)
-        click.echo(f"All songs on {channel_name}:")
-        click.echo(f"Currently playing: {songs[0][0]} by {songs[0][1]}")
-        if len(songs) > 1:
-            click.echo("Previously played (most recent first):")
-            # Show previous songs in reverse order (most recent first)
-            for i, (song, artist) in enumerate(reversed(songs[1:]), 1):
-                click.echo(f"{i}. {song} by {artist}")
+        table = Table(title=f"All songs on {channel_name}")
+        table.add_column("#", justify="right")
+        table.add_column("Song", style="cyan")
+        table.add_column("Artist", style="magenta")
+        # Current song first, marked and highlighted.
+        table.add_row("▶", songs[0][0], songs[0][1], style="bold green")
+        # Previous songs follow, most recent first.
+        for i, (song, artist) in enumerate(reversed(songs[1:]), 1):
+            table.add_row(str(i), song, artist)
+        console.print(table)
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        _print_error(str(e))
 
 
 @cli.command("current", help="Get the current song playing on a specific channel.")
@@ -387,10 +398,15 @@ def current_song(channel):
 
         channel_name = wpn.get_channel_name(channel)
         song, artist = wpn.get_current_song(channel)
-        click.echo(f"Channel: {channel_name}")
-        click.echo(f"Now playing: {song} by {artist}")
+        console.print(
+            Panel(
+                f"[bold cyan]{song}[/bold cyan]\n[dim]by {artist}[/dim]",
+                title=f"Now Playing — {channel_name}",
+                expand=False,
+            )
+        )
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        _print_error(str(e))
 
 
 @cli.command("previous", help="Get a list of previous songs played on a channel.")
@@ -409,14 +425,16 @@ def previous_songs(channel):
 
         channel_name = wpn.get_channel_name(channel)
         songs = wpn.get_previous_songs(channel)
-        click.echo(f"Previous songs on {channel_name} (most recent first):")
-
+        table = Table(title=f"Previous songs on {channel_name} (most recent first)")
+        table.add_column("#", justify="right", style="dim")
+        table.add_column("Song", style="cyan")
+        table.add_column("Artist", style="magenta")
         # Reverse the order to show most recent first
-        songs_to_display = list(reversed(songs))
-        for i, (song, artist) in enumerate(songs_to_display, 1):
-            click.echo(f"{i}. {song} by {artist}")
+        for i, (song, artist) in enumerate(reversed(songs), 1):
+            table.add_row(str(i), song, artist)
+        console.print(table)
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        _print_error(str(e))
 
 
 @cli.command("identify", help="Identify which channel is playing a given song.")
@@ -433,13 +451,25 @@ def identify_channel(song):
         song_query = " ".join(song)
         channel, song_info, confidence = wpn.identify_channel_by_song(song_query)
         if channel and song_info:
-            click.echo(f"Channel: {channel}")
-            click.echo(f"Song: {song_info[0]} by {song_info[1]}")
-            click.echo(f"Confidence: {confidence:.1f}%")
+            if confidence >= 80:
+                conf_color = "green"
+            elif confidence >= 50:
+                conf_color = "yellow"
+            else:
+                conf_color = "red"
+            body = (
+                f"[bold]Channel:[/bold]    {channel}\n"
+                f"[bold]Song:[/bold]       {song_info[0]}\n"
+                f"[bold]Artist:[/bold]     {song_info[1]}\n"
+                f"[bold]Confidence:[/bold] [{conf_color}]{confidence:.1f}%[/{conf_color}]"
+            )
+            console.print(Panel(body, title="Match found", expand=False))
         else:
-            click.echo("No matching song found across all channels.")
+            console.print(
+                "[yellow]No matching song found across all channels.[/yellow]"
+            )
     except Exception as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        _print_error(str(e))
 
 
 if __name__ == "__main__":
