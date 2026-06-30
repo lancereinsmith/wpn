@@ -7,8 +7,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from bs4 import BeautifulSoup
+from click.testing import CliRunner
 
-from wpn import BASEADDR, WPN
+from wpn import BASEADDR, WPN, cli
 
 
 @pytest.fixture
@@ -185,6 +186,31 @@ class TestWPN:
                 "What You Don't Do",
                 "Lianne La Havas",
             )
+
+    def test_get_song_list_parses_all_previous_songs(self, wpn_instance):
+        """The channel page lists previous songs as a flat sequence of text
+        nodes (each 'Song, by Artist') separated by <br>/<img> directly under
+        #titles. All of them must be parsed, not just the first."""
+        sep = '<br/><img height="4" src="shimi.gif" width="220"/><br/>'
+        html = (
+            '<div id="titles">'
+            "<p><b>Now on Test Channel</b><br/>Current Song, by Current Artist</p>"
+            "<b>The last ten songs on Test Channel<br/></b>"
+            f"First Previous, by Artist A{sep}"
+            f"Second Previous, by Artist B{sep}"
+            f"Third Previous, by Artist C{sep}"
+            "</div>"
+        )
+        channel_name, songs = wpn_instance._get_song_list_from_html(html)
+
+        assert channel_name == "Test Channel"
+        assert songs[0] == ("Current Song", "Current Artist")
+        # current + three previous songs
+        assert len(songs) == 4
+        # Most recent previous song is last (for negative indexing).
+        assert songs[-1] == ("First Previous", "Artist A")
+        assert songs[-2] == ("Second Previous", "Artist B")
+        assert songs[-3] == ("Third Previous", "Artist C")
 
     @patch("wpn.WPN._get_all_channels")
     def test_get_all_song_data_skips_failures(
@@ -402,6 +428,63 @@ class TestWPN:
         # Should handle errors gracefully and return at least an empty list
         assert channel_name == "Channel"
         assert isinstance(song_list, list)
+
+
+class TestCLIFormatting:
+    """The CLI renders output with rich tables/panels (box-drawing characters)
+    and a current-song marker, rather than plain line-by-line text."""
+
+    @patch("wpn.WPN")
+    def test_list_renders_table(self, mock_wpn_cls):
+        mock_wpn_cls.return_value.channel_list = ["Songbook", "Rock Show"]
+        result = CliRunner().invoke(cli, ["list"])
+        assert result.exit_code == 0
+        assert "Songbook" in result.output
+        assert "Rock Show" in result.output
+        # A rich table renders vertical box-drawing borders.
+        assert "│" in result.output
+
+    @patch("wpn.WPN")
+    def test_current_renders_panel(self, mock_wpn_cls):
+        inst = mock_wpn_cls.return_value
+        inst.get_channel_name.return_value = "Songbook"
+        inst.get_current_song.return_value = ("What You Don't Do", "Lianne La Havas")
+        result = CliRunner().invoke(cli, ["current", "Songbook"])
+        assert result.exit_code == 0
+        assert "What You Don't Do" in result.output
+        assert "Lianne La Havas" in result.output
+        # A rich panel renders box-drawing borders.
+        assert "│" in result.output
+
+    @patch("wpn.WPN")
+    def test_songs_marks_current_song(self, mock_wpn_cls):
+        inst = mock_wpn_cls.return_value
+        inst.get_channel_name.return_value = "Songbook"
+        inst.get_all_songs.return_value = [
+            ("What You Don't Do", "Lianne La Havas"),
+            ("Nick Of Time", "Bonnie Raitt"),
+        ]
+        result = CliRunner().invoke(cli, ["songs", "Songbook"])
+        assert result.exit_code == 0
+        assert "What You Don't Do" in result.output
+        assert "Nick Of Time" in result.output
+        # The current song row is flagged with a marker.
+        assert "▶" in result.output
+
+    @patch("wpn.WPN")
+    def test_identify_renders_panel(self, mock_wpn_cls):
+        inst = mock_wpn_cls.return_value
+        inst.identify_channel_by_song.return_value = (
+            "Songbook",
+            ("What You Don't Do", "Lianne La Havas"),
+            92.0,
+        )
+        result = CliRunner().invoke(cli, ["identify", "What You Don't Do"])
+        assert result.exit_code == 0
+        assert "Songbook" in result.output
+        assert "92" in result.output
+        # A rich panel renders box-drawing borders.
+        assert "│" in result.output
 
 
 # Integration tests (these will make actual network requests if not mocked)
