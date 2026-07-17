@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wpn"
-version = "0.4.1"
+version = "0.4.2"
 description = "A Python library for scraping and retrieving song information from the WPN (What's Playing Now) website operated by Mood Media. This tool allows you to get current and historical song data for various music channels/stations."
 readme = "README.md"
 requires-python = ">=3.12"

@@ -18,6 +18,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: pypi
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
@@ -59,9 +60,6 @@ jobs:
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.UV_PUBLISH_TOKEN }}
-        packages_dir: dist/
 
   notify:
     runs-on: ubuntu-latest
